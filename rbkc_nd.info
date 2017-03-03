@@ -1,0 +1,7 @@
+name = RBKC New Domain
+description = Creates new Domain Access domains
+core = 7.x
+package = RBKC
+
+dependencies[] = domain
+dependencies[] = subfolders_domain

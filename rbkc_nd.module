@@ -1,0 +1,62 @@
+<?php
+
+
+function rbkc_nd_domain_add($subdomain, $sitename) {
+  rbkc_nd_domain_add_domain($subdomain, $sitename);
+  rbkc_nd_domain_add_subfolder($subdomain, $sitename);
+}
+
+function rbkc_nd_domain_add_domain($subdomain, $sitename) {
+  $start_weight = (int) db_query("SELECT weight FROM {domain} ORDER BY weight DESC")->fetchField();
+  $record = array(
+    'subdomain' => strtolower($subdomain),
+    'sitename' => $sitename,
+    'valid' => 1,
+    'scheme' => 'https',
+    'weight' => $start_weight + 1,
+    'is_default' => 0,
+  );
+  if (!empty($record['is_default'])) {
+    $error = domain_check_response($record, TRUE);
+    if ($error) {
+      if (drupal_is_cli()) {
+        return drush_set_error('domain', $error);
+      } else {
+        print_r($error);
+        return false;
+      }
+    }
+  }
+  $domain = domain_save($record, $record);
+  if (isset($domain['domain_id'])) {
+    if (drupal_is_cli()) {
+      drush_print(dt('Created @domain for @sitename.', array('@domain' => $domain['subdomain'], '@sitename' => $domain['sitename'])));
+    } else {
+      print t('Created @domain for @sitename.', array('@domain' => $domain['subdomain'], '@sitename' => $domain['sitename']));
+    }
+  }
+  else {
+    if (drupal_is_cli()) {
+      drush_print(dt('The request could not be completed.'));
+    } else {
+      print t('The request could not be completed.');
+    }
+  }
+  
+}
+
+function rbkc_nd_domain_add_subfolder($subdomain, $sitename) {
+  $check_subdomain = subfolders_domain_valid($subdomain, $error_list, 'domain_form');
+  
+  $error_list = $check_subdomain['error_list'];
+  if (!empty($error_list)) {
+    if (drupal_is_cli()) {
+      drush_set_error('subdomain', implode('<br />', $error_list));
+    } else {
+      print_r($error_list);
+    }
+  }
+  
+  $form = $form_state = array();
+  subfolders_domain_form_submit($form, $form_state);
+}
